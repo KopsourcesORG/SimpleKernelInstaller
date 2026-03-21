@@ -6,18 +6,6 @@ chmod +x $MODPATH/tools/*
 export PATH="$MODPATH/tools:$PATH"
 cd $MODPATH
 
-# self check
-if [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*.dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
-    abort "! kernel/dtb/dtbo not found! This package may be broken!"
-fi
-
-# check data
-DATA=false
-mount /data 2>/dev/null
-if grep ' /data ' /proc/mounts | grep -vq 'tmpfs'; then
-    touch /data/.rw && rm /data/.rw && DATA=true
-fi
-
 # print_title (from magisk)
 print_title() {
     local len line1len line2len bar
@@ -33,8 +21,21 @@ print_title() {
     ui_print "$bar"
 }
 
-# Get Kernel Name
-name=$(grep '^name=' $MODPATH/config.conf | cut -d '=' -f 2)
+# print kernel name as a title
+kernelname=$(grep '^name=' $MODPATH/customize.sh | cut -d '=' -f 2)
+print_title "$kernelname Installer"
+
+# self check
+if [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*.dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
+    abort "! kernel/dtb/dtbo not found! This package may be broken!"
+fi
+
+# check data
+DATA=false
+mount /data 2>/dev/null
+if grep ' /data ' /proc/mounts | grep -vq 'tmpfs'; then
+    touch /data/.rw && rm /data/.rw && DATA=true
+fi
 
 # devicename check (from anykernel3)
 check_devicename() {
@@ -44,7 +45,7 @@ check_devicename() {
     product=$(getprop ro.build.product 2>/dev/null);
     vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
     vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
-    for testname in $(grep '^devicename.*=' $MODPATH/config.conf | cut -d= -f2-); do
+    for testname in $(grep '^devicename.*=' customize.sh | cut -d= -f2-); do
         for devicename in $device $product $vendordevice $vendorproduct; do
             if [ "$devicename" == "$testname" ]; then
                 ui_print "- This device is '$testname'."
