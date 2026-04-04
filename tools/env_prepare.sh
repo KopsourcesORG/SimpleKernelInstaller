@@ -18,7 +18,9 @@ ui_print "$TITLE"
 ui_print "$bar"
 
 # self check
-if [ ! -e $MODPATH/kernel ] && [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
+if [ -e $MODPATH/kernel ] || [ -e $MODPATH/*Image* ] || [ -e $MODPATH/*dtb ]; then
+    MODIFYBOOT=true
+elif [ ! -e $MODPATH/*dtbo*.img ]; then
     abort "! kernel/dtb/dtbo not found! This package may be broken!"
 fi
 
@@ -54,7 +56,7 @@ check_devicename() {
 
 install() {
     cd $WORKDIR
-    if [ -n "$(ls /dev/block/bootdevice/by-name/boot*)" ]; then
+    if $MODIFYBOOT && [ -n "$(ls /dev/block/bootdevice/by-name/boot*)" ]; then
         ui_print "- Getting 'boot' Image..."
         dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=boot.img
         ui_print "- Unpacking 'boot' Image..."
@@ -97,8 +99,6 @@ install() {
         fi
         ui_print "- Flashing 'boot' Image..."
         dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
-    else
-        abort "! Unsupport Environment!"
     fi
     if [ -e $MODPATH/*dtbo*.img ] && [ -n "$(ls /dev/block/bootdevice/by-name/dtbo*)" ]; then
         ui_print "- Flashing 'dtbo' Image..."
@@ -109,5 +109,5 @@ install() {
         ui_print "- Cleaning Dalvik cache..."
         rm -rf /data/dalvik-cache/*
     fi
-    ui_print "- Install Success!"
+    ui_print "- Install Finished!"
 }
