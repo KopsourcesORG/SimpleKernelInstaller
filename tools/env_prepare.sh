@@ -77,8 +77,10 @@ install() {
             ui_print "- Replacing dtb..."
             if [ -e $MODPATH/kernel_dtb ]; then
                 mv $MODPATH/kernel_dtb .
+                REPLACEDDTB=true
             elif [ -e $MODPATH/*.dtb ]; then
                 mv $MODPATH/*.dtb kernel_dtb
+                REPLACEDDTB=true
             fi
         fi
         ui_print "- Repacking 'boot' Image..."
@@ -101,15 +103,11 @@ install() {
     if [ -e $MODPATH/*dtbo*.img ] && [ -n "$(ls /dev/block/bootdevice/by-name/dtbo*)" ]; then
         ui_print "- Flashing 'dtbo' Image..."
         dd if=$(find $MODPATH/ -type f -name "*dtbo*.img") of="/dev/block/bootdevice/by-name/dtbo$(getprop ro.boot.slot_suffix)"
+        REPLACEDDTB=true
     fi
-    ui_print "- Install Success!"
-}
-
-clean_dalvik_cache() {
-    if $DATA; then
+    if $DATA && [ "$REPLACEDDTB" == "true"  ]; then
         ui_print "- Cleaning Dalvik cache..."
         rm -rf /data/dalvik-cache/*
-    else
-        ui_print '! /data is not writable! Skipping Dalvik cache cleaning...'
     fi
+    ui_print "- Install Success!"
 }

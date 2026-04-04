@@ -12,4 +12,3 @@ devicename3=example3
 . $MODPATH/tools/env_prepare.sh
 check_devicename
 install
-clean_dalvik_cache
