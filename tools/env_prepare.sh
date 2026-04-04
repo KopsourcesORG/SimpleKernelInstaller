@@ -1,10 +1,11 @@
 # Environment Preparation For SimpleKernelInstaller
 # By KeJia
 
-# setup path
+# setup dir
 chmod +x $MODPATH/tools/*
 export PATH="$MODPATH/tools:$PATH"
-cd $MODPATH
+export WORKDIR=$MODPATH/workdir
+mkdir $WORKDIR
 
 # print_title (from magisk)
 print_title() {
@@ -45,7 +46,7 @@ check_devicename() {
     product=$(getprop ro.build.product 2>/dev/null);
     vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
     vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
-    for testname in $(grep '^devicename.*=' customize.sh | cut -d= -f2-); do
+    for testname in $(grep '^devicename.*=' $MODPATH/customize.sh | cut -d= -f2-); do
         for devicename in $device $product $vendordevice $vendorproduct; do
             if [ "$devicename" == "$testname" ]; then
                 ui_print "- This device is '$testname'."
@@ -61,12 +62,13 @@ check_devicename() {
 }
 
 install() {
+    cd $WORKDIR
     if [ -n "$(ls /dev/block/bootdevice/by-name/boot*)" ]; then
         if [ -e $MODPATH/*Image* ] || [ -e $MODPATH/*.dtb ]; then
             ui_print "- Getting 'boot' Image..."
-            dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=$MODPATH/boot.img
+            dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=boot.img
             ui_print "- Unpacking 'boot' Image..."
-            magiskboot unpack $MODPATH/boot.img
+            magiskboot unpack boot.img
             if [ -e $MODPATH/*Image*-dtb ]; then
                 ui_print "- Replacing kernel and dtb..."
                 magiskboot split $(find $MODPATH/ -type f -name "*Image*-dtb")
@@ -83,13 +85,13 @@ install() {
                 mv $MODPATH/*.dtb kernel_dtb
             fi
             ui_print "- Repacking 'boot' Image..."
-            magiskboot repack $MODPATH/boot.img
+            magiskboot repack boot.img
             ui_print "- Flashing 'boot' Image..."
-            dd if=$MODPATH/new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
+            dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
             if $DATA; then
                 ui_print "- Backing up 'boot' Image..."
                 rm /data/boot_backup*.img
-                mv $MODPATH/boot.img "/data/boot_backup_$(date +'%Y%m%d_%H%M%S').img"
+                mv boot.img "/data/boot_backup_$(date +'%Y%m%d_%H%M%S').img"
                 ui_print "- You can find 'boot' backup in /data !"
             else
                 ui_print "! /data is not writable! Skipping backup..."
@@ -102,7 +104,7 @@ install() {
         ui_print "- Flashing 'dtbo' Image..."
         dd if=$(find $MODPATH/ -type f -name "*dtbo*.img") of="/dev/block/bootdevice/by-name/dtbo$(getprop ro.boot.slot_suffix)"
     fi
-        ui_print "- Install Success!"
+    ui_print "- Install Success!"
 }
 
 clean_dalvik_cache() {
