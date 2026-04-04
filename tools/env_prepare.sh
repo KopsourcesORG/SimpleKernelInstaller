@@ -92,8 +92,6 @@ install() {
         fi
         ui_print "- Repacking 'boot' Image..."
         magiskboot repack boot.img
-        ui_print "- Flashing 'boot' Image..."
-        dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
         if $DATA; then
             ui_print "- Backing up 'boot' Image..."
             rm /data/boot_backup*.img
@@ -102,6 +100,8 @@ install() {
         else
             ui_print "! /data is not writable! Skipping backup..."
         fi
+        ui_print "- Flashing 'boot' Image..."
+        dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
     else
         abort "! Unsupport Environment!"
     fi
