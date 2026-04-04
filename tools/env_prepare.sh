@@ -1,10 +1,11 @@
 # Environment Preparation For SimpleKernelInstaller
 # By KeJia
 
-# setup dir
+# setup
 chmod +x $MODPATH/tools/*
-export PATH="$MODPATH/tools:$PATH"
-export WORKDIR=$MODPATH/workdir
+PATH="$MODPATH/tools:$PATH"
+BACKUP='/data/boot_backup_'
+WORKDIR=$MODPATH/workdir
 mkdir $WORKDIR
 
 # print_title (from magisk)
@@ -94,8 +95,10 @@ install() {
         magiskboot repack boot.img
         if $DATA; then
             ui_print "- Backing up 'boot' Image..."
-            rm /data/boot_backup*.img
-            mv boot.img "/data/boot_backup_$(date +'%Y%m%d_%H%M%S').img"
+            if [ "$(ls -1 $BACKUP* | wc -l)" -ge 3 ]; then
+                rm "$(ls -1 $BACKUP* | head -1)"
+            fi
+            mv boot.img "$BACKUP$(date +'%Y%m%d_%H%M%S').img"
             ui_print "- You can find 'boot' backup in /data !"
         else
             ui_print "! /data is not writable! Skipping backup..."
