@@ -8,24 +8,14 @@ BACKUP='/data/boot_backup_'
 WORKDIR=$MODPATH/workdir
 mkdir $WORKDIR
 
-# print_title (from magisk)
-print_title() {
-    local len line1len line2len bar
-    line1len=$(echo -n $1 | wc -c)
-    line2len=$(echo -n $2 | wc -c)
-    len=$line2len
-    [ $line1len -gt $line2len ] && len=$line1len
-    len=$((len + 2))
-    bar=$(printf "%${len}s" | tr ' ' '*')
-    ui_print "$bar"
-    ui_print " $1 "
-    [ "$2" ] && ui_print " $2 "
-    ui_print "$bar"
-}
-
 # print kernel name as a title
-kernelname=$(grep '^name=' $MODPATH/customize.sh | cut -d '=' -f 2)
-print_title "$kernelname Installer"
+TITLE=" $(grep '^name=' $MODPATH/customize.sh | cut -d '=' -f 2) Installer "
+linelen=$(echo -n "$TITLE" | wc -c)
+len=$linelen
+bar=$(printf "%${len}s" | tr ' ' '*')
+ui_print "$bar"
+ui_print "$TITLE"
+ui_print "$bar"
 
 # self check
 if [ ! -e $MODPATH/kernel ] && [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
