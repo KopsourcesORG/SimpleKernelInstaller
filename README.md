@@ -6,10 +6,12 @@
 ---
 * Supported kernel/dtb format (sort by flashing order)
 ```
+kernel
 *Image*-dtb
 *Image*
-*.dtb
-(If the first one exists, the last two will not be installed)
+*dtb
+(If the first one exists, the middle two will not be installed,
+If the second one exists, the last two will not be installed)
 ```
 * Supported dtbo format:
 ```
@@ -17,8 +19,8 @@
 ```
 ---
 ##### Usage:
-* Put your kernel (*Image*-dtb or *Image*) into this package.
-* Put your dtb (*.dtb) into this package (if you have).
+* Put your kernel (kernel, *Image*-dtb or *Image*) into this package.
+* Put your dtb (*dtb) into this package (if you have).
 * Put your dtbo (*dtbo*.img) into this package (if you have).
 * Change The Kernel Name and Devicename in customize.sh
 * Flash it in Recovery(3rd-party recoverys only), Magisk(as a module), KernelSU(as a module), APatch(as a apm module) or KernelFlasher(as a AK3 package)!

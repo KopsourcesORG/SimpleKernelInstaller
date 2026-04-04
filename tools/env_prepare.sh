@@ -27,7 +27,7 @@ kernelname=$(grep '^name=' $MODPATH/customize.sh | cut -d '=' -f 2)
 print_title "$kernelname Installer"
 
 # self check
-if [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*.dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
+if [ ! -e $MODPATH/kernel ] && [ ! -e $MODPATH/*Image* ] && [ ! -e $MODPATH/*dtb ] && [ ! -e $MODPATH/*dtbo*.img ]; then
     abort "! kernel/dtb/dtbo not found! This package may be broken!"
 fi
 
@@ -64,38 +64,43 @@ check_devicename() {
 install() {
     cd $WORKDIR
     if [ -n "$(ls /dev/block/bootdevice/by-name/boot*)" ]; then
-        if [ -e $MODPATH/*Image* ] || [ -e $MODPATH/*.dtb ]; then
-            ui_print "- Getting 'boot' Image..."
-            dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=boot.img
-            ui_print "- Unpacking 'boot' Image..."
-            magiskboot unpack boot.img
-            if [ -e $MODPATH/*Image*-dtb ]; then
-                ui_print "- Replacing kernel and dtb..."
-                magiskboot split $(find $MODPATH/ -type f -name "*Image*-dtb")
-                REPLACEDDTB=true
-            elif [ -e $MODPATH/Image ]; then
-                ui_print "- Replacing kernel..."
-                mv $MODPATH/Image kernel
-            elif [ -e $MODPATH/*Image* ]; then
-                ui_print "- Replacing kernel..."
-                magiskboot decompress $(find $MODPATH/ -type f -name "*Image*") kernel
-            fi
-            if [ "$REPLACEDDTB" != "true"  ]; then
-                ui_print "- Replacing dtb..."
+        ui_print "- Getting 'boot' Image..."
+        dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=boot.img
+        ui_print "- Unpacking 'boot' Image..."
+        magiskboot unpack boot.img
+        if [ -e $MODPATH/kernel ]; then
+            ui_print "- Replacing kernel..."
+            mv $MODPATH/kernel .
+        elif [ -e $MODPATH/*Image*-dtb ]; then
+            ui_print "- Replacing kernel and dtb..."
+            magiskboot split $(find $MODPATH/ -type f -name "*Image*-dtb")
+            REPLACEDDTB=true
+        elif [ -e $MODPATH/Image ]; then
+            ui_print "- Replacing kernel..."
+            mv $MODPATH/Image kernel
+        elif [ -e $MODPATH/*Image* ]; then
+            ui_print "- Replacing kernel..."
+            magiskboot decompress $(find $MODPATH/ -type f -name "*Image*") kernel
+        fi
+        if [ "$REPLACEDDTB" != "true"  ] && [ -e $MODPATH/*dtb ]; then
+            ui_print "- Replacing dtb..."
+            if [ -e $MODPATH/kernel_dtb ]; then
+                mv $MODPATH/kernel_dtb .
+            elif [ -e $MODPATH/*.dtb ]; then
                 mv $MODPATH/*.dtb kernel_dtb
             fi
-            ui_print "- Repacking 'boot' Image..."
-            magiskboot repack boot.img
-            ui_print "- Flashing 'boot' Image..."
-            dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
-            if $DATA; then
-                ui_print "- Backing up 'boot' Image..."
-                rm /data/boot_backup*.img
-                mv boot.img "/data/boot_backup_$(date +'%Y%m%d_%H%M%S').img"
-                ui_print "- You can find 'boot' backup in /data !"
-            else
-                ui_print "! /data is not writable! Skipping backup..."
-            fi
+        fi
+        ui_print "- Repacking 'boot' Image..."
+        magiskboot repack boot.img
+        ui_print "- Flashing 'boot' Image..."
+        dd if=new-boot.img of="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)"
+        if $DATA; then
+            ui_print "- Backing up 'boot' Image..."
+            rm /data/boot_backup*.img
+            mv boot.img "/data/boot_backup_$(date +'%Y%m%d_%H%M%S').img"
+            ui_print "- You can find 'boot' backup in /data !"
+        else
+            ui_print "! /data is not writable! Skipping backup..."
         fi
     else
         abort "! Unsupport Environment!"
