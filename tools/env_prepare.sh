@@ -5,11 +5,15 @@
 chmod +x $MODPATH/tools/*
 PATH="$MODPATH/tools:$PATH"
 BACKUP='/data/boot_backup_'
+STARTFILE="$MODPATH/customize.sh"
+CMDLINEOVERWRITE=$(grep '^cmdlineoverwrite=' "$STARTFILE" | cut -d'=' -f2-)
+CMDLINEADD=$(grep '^cmdlineadd=' "$STARTFILE" | cut -d'=' -f2-)
+CMDLINEREMOVE=$(grep '^cmdlineremove=' "$STARTFILE" | cut -d'=' -f2-)
 WORKDIR=$MODPATH/workdir
 mkdir $WORKDIR
 
 # print kernel name as a title
-TITLE=" $(grep '^name=' $MODPATH/customize.sh | cut -d '=' -f 2) Installer "
+TITLE=" $(grep '^name=' $STARTFILE | cut -d '=' -f 2) Installer "
 linelen=$(echo -n "$TITLE" | wc -c)
 len=$linelen
 bar=$(printf "%${len}s" | tr ' ' '*')
@@ -18,10 +22,10 @@ ui_print "$TITLE"
 ui_print "$bar"
 
 # self check
-if [ -e $MODPATH/kernel ] || [ -e $MODPATH/*Image* ] || [ -e $MODPATH/*dtb ]; then
+if [ -e $MODPATH/kernel ] || [ -e $MODPATH/*Image* ] || [ -e $MODPATH/*dtb ] || [ -n "$CMDLINEOVERWRITE" ] || [ -n "$CMDLINEADD" ] || [ -n "$CMDLINEREMOVE" ]; then
     MODIFYBOOT=true
 elif [ ! -e $MODPATH/*dtbo*.img ]; then
-    abort "! kernel/dtb/dtbo not found! This package may be broken!"
+    abort "! kernel/dtb/dtbo/cmdline not found! This package may be broken!"
 fi
 
 # check data
@@ -39,7 +43,7 @@ check_devicename() {
     product=$(getprop ro.build.product 2>/dev/null);
     vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
     vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
-    for testname in $(grep '^devicename.*=' $MODPATH/customize.sh | cut -d= -f2-); do
+    for testname in $(grep '^devicename.*=' $STARTFILE | cut -d= -f2-); do
         for devicename in $device $product $vendordevice $vendorproduct; do
             if [ "$devicename" == "$testname" ]; then
                 ui_print "- This device is '$testname'."
@@ -60,7 +64,31 @@ install() {
         ui_print "- Getting 'boot' Image..."
         dd if="/dev/block/bootdevice/by-name/boot$(getprop ro.boot.slot_suffix)" of=boot.img
         ui_print "- Unpacking 'boot' Image..."
-        magiskboot unpack boot.img
+        magiskboot unpack -h boot.img
+        if [ -n "$CMDLINEOVERWRITE" ] || [ -n "$CMDLINEADD" ] || [ -n "$CMDLINEREMOVE" ]; then
+            ui_print "- Applying cmdline changes..."
+            new_header=$(awk -v overwrite="$CMDLINEOVERWRITE" -v add="$CMDLINEADD" -v remove="$CMDLINEREMOVE" -F'=' '
+            BEGIN { OFS="=" }
+            {
+                if ($1 == "cmdline") {
+                    if (overwrite != "") { print $1, overwrite; next }
+                    n = split($2, arr, ",")
+                    out = ""
+                    for (i = 1; i <= n; i++) {
+                        if (remove != "" && index(arr[i], remove) > 0) continue
+                        out = (out == "" ? arr[i] : out "," arr[i])
+                    }
+                    if (add != "") {
+                        out = (out == "" ? add : out "," add)
+                    }
+                    print $1, out
+                } else {
+                    print
+                }
+            }
+            ' "header")
+            printf "%s\n" "$new_header" > "header"
+        fi
         if [ -e $MODPATH/kernel ]; then
             ui_print "- Replacing kernel..."
             mv $MODPATH/kernel .

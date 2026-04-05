@@ -7,6 +7,10 @@ name=Example Kernel
 devicename1=example1
 devicename2=example2
 devicename3=example3
+# cmdline Modify
+cmdlineoverwrite=
+cmdlineadd=
+cmdlineremove=
 
 # DO NOT MODIFY THIS PART!
 . $MODPATH/tools/env_prepare.sh

@@ -23,6 +23,7 @@ If the second one exists, the last two will not be installed)
 * Put your dtb (*dtb) into this package (if you have).
 * Put your dtbo (*dtbo*.img) into this package (if you have).
 * Change The Kernel Name and Devicename in customize.sh
+* If you need to modify cmdline, modify the "cmdline Modify" in customize.sh: the cmdlines in cmdlineadd will be added into the cmdline, the cmdlines in cmdlineremove will be removed from the cmdline. If the cmdlineoverwrite is not empty, the cmdline will be overwritten with cmdlineoverwrite, but the cmdlineadd and cmdlineremove will be not applied.
 * Flash it in Recovery(3rd-party recoverys only), Magisk(as a module), KernelSU(as a module), APatch(as a apm module) or KernelFlasher(as a AK3 package)!
 ---
 ##### Credits:
